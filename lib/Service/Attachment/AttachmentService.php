@@ -253,6 +253,11 @@ class AttachmentService implements IAttachmentService {
 				$attachmentIds[] = $this->handleForwardedAttachment($account, $attachment, $client);
 				continue;
 			}
+			if ($attachment['type'] === 'message-inline-attachment') {
+				// Adds an attachment from another email (use case is, eg., a mail forward)
+				$attachmentIds[] = $this->handleForwardedAttachment($account, $attachment, $client);
+				continue;
+			}
 
 			$attachmentIds[] = $this->handleCloudAttachment($account, $attachment);
 		}
@@ -361,32 +366,26 @@ class AttachmentService implements IAttachmentService {
 	private function handleForwardedAttachment(Account $account, array $attachment, \Horde_Imap_Client_Socket $client): ?int {
 		$mailbox = $this->mailManager->getMailbox($account->getUserId(), $attachment['mailboxId']);
 
-		$attachments = $this->messageMapper->getRawAttachments(
+		$attachment2 = $this->messageMapper->getAttachment(
 			$client,
 			$mailbox->getName(),
 			(int)$attachment['uid'],
+			$attachment['id'],
 			$account->getUserId(),
-			[
-				$attachment['id'] ?? []
-			]
 		);
-
-		if ($attachments === []) {
-			return null;
-		}
 
 		// detect mime type
 		$mime = 'application/octet-stream';
 		if (extension_loaded('fileinfo')) {
 			$finfo = new finfo(FILEINFO_MIME_TYPE);
-			$detectedMime = $finfo->buffer($attachments[0]);
+			$detectedMime = $finfo->buffer($attachment2->getType());
 			if ($detectedMime !== false) {
 				$mime = $detectedMime;
 			}
 		}
 
 		try {
-			$localAttachment = $this->addFileFromString($account->getUserId(), $attachment['fileName'], $mime, $attachments[0]);
+			$localAttachment = $this->addFileFromString($account->getUserId(), $attachment['fileName'], $mime, $attachment2->getContent());
 		} catch (UploadException $e) {
 			$this->logger->error('Could not create attachment', ['exception' => $e]);
 			return null;

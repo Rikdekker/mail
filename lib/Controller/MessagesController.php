@@ -35,6 +35,7 @@ use OCA\Mail\Service\SnoozeService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\OpenAPI;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
@@ -247,7 +248,7 @@ class MessagesController extends Controller {
 			);
 
 			if ($imapMessage->hasHtmlMessage()) {
-				$cacheInstance->set($imapMessageCacheKey, $imapMessage->getHtmlBody($id), 600);
+				$cacheInstance->set($imapMessageCacheKey, $imapMessage->getHtmlBody($id, true), 600);
 			}
 
 			$json = $imapMessage->getFullMessage($id);
@@ -646,7 +647,7 @@ class MessagesController extends Controller {
 						$message->getUid(),
 						true
 					)->getHtmlBody(
-						$id
+						$id, true
 					);
 				} finally {
 					$client->logout();
@@ -686,6 +687,33 @@ class MessagesController extends Controller {
 				Http::STATUS_INTERNAL_SERVER_ERROR
 			);
 		}
+	}
+
+	#[NoAdminRequired]
+	#[Http\Attribute\Route(Http\Attribute\Route::TYPE_FRONTPAGE, 'GET', '/api/messages/{id}/html/forward')]
+	public function getHtmlBodyForward(int $id): Response {
+		$message = $this->mailManager->getMessage($this->currentUserId, $id);
+		$mailbox = $this->mailManager->getMailbox($this->currentUserId, $message->getMailboxId());
+		$account = $this->accountService->find($this->currentUserId, $mailbox->getAccountId());
+
+		$client = $this->clientFactory->getClient($account);
+		try {
+			$html = $this->mailManager->getImapMessage(
+				$client,
+				$account,
+				$mailbox,
+				$message->getUid(),
+				true
+			)->getHtmlBody(
+				$id,
+				false
+
+			);
+		} finally {
+			$client->logout();
+		}
+
+		return HtmlResponse::plain($html);
 	}
 
 	/**

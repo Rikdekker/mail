@@ -102,7 +102,7 @@ class Html {
 		];
 	}
 
-	public function sanitizeHtmlMailBody(string $mailBody, array $messageParameters, Closure $mapCidToAttachmentId): string {
+	public function sanitizeHtmlMailBody(int $messageId, string $mailBody, array $inlineAttachments): string {
 		$config = HTMLPurifier_Config::createDefault();
 
 		// Append target="_blank" to all link (a) elements
@@ -130,7 +130,7 @@ class Html {
 
 		/** @var HTMLPurifier_URIDefinition $uri */
 		$uri = $config->getDefinition('URI');
-		$uri->addFilter(new TransformURLScheme($messageParameters, $mapCidToAttachmentId, $this->urlGenerator, $this->request), $config);
+		$uri->addFilter(new TransformURLScheme($messageId, $inlineAttachments, $this->urlGenerator, $this->request), $config);
 
 		$uriSchemeRegistry = HTMLPurifier_URISchemeRegistry::instance();
 		$uriSchemeRegistry->register('cid', new CidURIScheme());

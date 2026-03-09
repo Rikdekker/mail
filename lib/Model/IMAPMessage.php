@@ -298,12 +298,13 @@ class IMAPMessage implements IMessage, JsonSerializable {
 		$data = $this->jsonSerialize();
 
 		if ($this->hasHtmlMessage && $loadBody) {
-			$data['body'] = $this->getHtmlBody($id);
+			$data['body'] = $this->getHtmlBody($id, true);
 		}
 
 		if ($this->hasHtmlMessage) {
 			$data['hasHtmlBody'] = true;
 			$data['attachments'] = $this->attachments;
+			$data['inlineAttachments'] = $this->inlineAttachments;
 			return $data;
 		}
 
@@ -348,18 +349,14 @@ class IMAPMessage implements IMessage, JsonSerializable {
 	 *
 	 * @return string
 	 */
-	public function getHtmlBody(int $id): string {
-		return $this->htmlService->sanitizeHtmlMailBody($this->htmlMessage, [
-			'id' => $id,
-		], function ($cid) {
-			$match = array_filter($this->inlineAttachments,
-				static fn ($a) => $a['cid'] === $cid);
-			$match = array_shift($match);
-			if ($match === null) {
-				return null;
-			}
-			return $match['id'];
-		});
+	public function getHtmlBody(int $id, bool $replaceAttachments): string {
+
+
+		return $this->htmlService->sanitizeHtmlMailBody(
+			$id,
+			$this->htmlMessage,
+			$replaceAttachments ? $this->inlineAttachments : [],
+		);
 	}
 
 	/**

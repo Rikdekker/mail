@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { showError, showWarning, TOAST_DEFAULT_TIMEOUT } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
+import {showError, showWarning, TOAST_DEFAULT_TIMEOUT} from '@nextcloud/dialogs'
+import {translate as t} from '@nextcloud/l10n'
 import DOMPurify from 'dompurify'
 import escapeRegExp from 'lodash/fp/escapeRegExp.js'
 import flatMapDeep from 'lodash/fp/flatMapDeep.js'
@@ -33,10 +33,10 @@ import {
 } from 'ramda'
 import Vue from 'vue'
 import MailboxLockedError from '../../errors/MailboxLockedError.js'
-import { matchError } from '../../errors/match.js'
+import {matchError} from '../../errors/match.js'
 import SyncIncompleteError from '../../errors/SyncIncompleteError.js'
-import { handleHttpAuthErrors } from '../../http/sessionExpiryHandler.js'
-import { sortMailboxes } from '../../imap/MailboxSorter.js'
+import {handleHttpAuthErrors} from '../../http/sessionExpiryHandler.js'
+import {sortMailboxes} from '../../imap/MailboxSorter.js'
 import logger from '../../logger.js'
 import {
 	buildForwardSubject,
@@ -50,8 +50,8 @@ import {
 	fetchAll as fetchAllAccounts,
 	patch as patchAccount,
 	update as updateAccount,
-	updateSmimeCertificate as updateAccountSmimeCertificate,
 	updateSignature,
+	updateSmimeCertificate as updateAccountSmimeCertificate,
 } from '../../service/AccountService.js'
 import * as AliasService from '../../service/AliasService.js'
 import {
@@ -59,9 +59,12 @@ import {
 	getCurrentUserPrincipal,
 	initializeClientForUserView,
 } from '../../service/caldavService.js'
-import { moveDraft, updateDraft } from '../../service/DraftService.js'
+import {moveDraft, updateDraft} from '../../service/DraftService.js'
 import * as FollowUpService from '../../service/FollowUpService.js'
-import { addInternalAddress, removeInternalAddress } from '../../service/InternalAddressService.js'
+import {
+	addInternalAddress,
+	removeInternalAddress
+} from '../../service/InternalAddressService.js'
 import {
 	clearMailbox,
 	create as createMailbox,
@@ -79,6 +82,7 @@ import {
 	fetchMessage,
 	fetchMessageDkim,
 	fetchMessageHtmlBody,
+	fetchMessageHtmlBodyForward,
 	fetchMessageItineraries,
 	fetchThread,
 	moveMessage,
@@ -90,24 +94,35 @@ import {
 	unSnoozeMessage,
 	updateEnvelopeTag,
 } from '../../service/MessageService.js'
-import { showNewMessagesNotification } from '../../service/NotificationService.js'
-import { savePreference } from '../../service/PreferenceService.js'
-import { createQuickAction, deleteQuickAction, updateQuickAction } from '../../service/QuickActionsService.js'
+import {showNewMessagesNotification} from '../../service/NotificationService.js'
+import {savePreference} from '../../service/PreferenceService.js'
+import {
+	createQuickAction,
+	deleteQuickAction,
+	updateQuickAction
+} from '../../service/QuickActionsService.js'
 import {
 	getActiveScript,
-	updateActiveScript,
 	updateAccount as updateSieveAccount,
+	updateActiveScript,
 } from '../../service/SieveService.js'
-import * as SmimeCertificateService from '../../service/SmimeCertificateService.js'
-import { createTextBlock, deleteTextBlock, fetchMyTextBlocks, fetchSharedTextBlocks, updateTextBlock } from '../../service/TextBlockService.js'
+import * as SmimeCertificateService
+	from '../../service/SmimeCertificateService.js'
+import {
+	createTextBlock,
+	deleteTextBlock,
+	fetchMyTextBlocks,
+	fetchSharedTextBlocks,
+	updateTextBlock
+} from '../../service/TextBlockService.js'
 import * as ThreadService from '../../service/ThreadService.js'
-import { normalizedEnvelopeListId } from '../../util/normalization.js'
+import {normalizedEnvelopeListId} from '../../util/normalization.js'
 import {
 	getPrioritySearchQueries,
 	priorityImportantQuery,
 	priorityOtherQuery,
 } from '../../util/priorityInbox.js'
-import { wait } from '../../util/wait.js'
+import {wait} from '../../util/wait.js'
 import {
 	FOLLOW_UP_MAILBOX_ID,
 	FOLLOW_UP_TAG_LABEL,
@@ -483,7 +498,7 @@ export default function mainStoreActions() {
 					// Fetch and transform the body into a rich text object
 					if (original.hasHtmlBody) {
 						data.isHtml = true
-						data.bodyHtml = await this.processHtmlBody(original.databaseId)
+						data.bodyHtml = await this.processHtmlBodyForward(original.databaseId)
 						if (reply.suggestedReply) {
 							data.bodyHtml = `<p>${reply.suggestedReply}<\\p>` + data.bodyHtml
 						}
@@ -547,13 +562,7 @@ export default function mainStoreActions() {
 								bodyHtml: data.bodyHtml,
 								bodyPlain: data.bodyPlain,
 								forwardFrom: reply.data,
-								attachments: original.attachments.map((attachment) => ({
-									...attachment,
-									mailboxId: original.mailboxId,
-									// messageId for attachments is actually the uid
-									uid: attachment.messageId,
-									type: 'message-attachment',
-								})),
+								attachments:this.prepareAttachments(original),
 							},
 						})
 						return
@@ -569,7 +578,7 @@ export default function mainStoreActions() {
 					// Fetch and transform the body into a rich text object
 					if (message.hasHtmlBody) {
 						data.isHtml = true
-						data.bodyHtml = await this.processHtmlBody(templateMessageId)
+						data.bodyHtml = await this.processHtmlBodyForward(templateMessageId)
 					} else {
 						data.isHtml = false
 						data.bodyPlain = message.body
@@ -602,6 +611,35 @@ export default function mainStoreActions() {
 					this.setComposerMessageSavedMutation(true)
 				}
 			})
+		},
+		prepareAttachments(original) {
+			const attachments = [];
+
+			if (original.attachments) {
+				for (const attachment of original.attachments) {
+					attachments.push({
+						...attachment,
+						mailboxId: original.mailboxId,
+						// messageId for attachments is actually the uid
+						uid: attachment.messageId,
+						type: 'message-attachment',
+					})
+				}
+			}
+
+			if (original.inlineAttachments) {
+				for (const inlineAttachment of original.inlineAttachments) {
+					attachments.push({
+						...inlineAttachment,
+						mailboxId: original.mailboxId,
+						// messageId for attachments is actually the uid
+						uid: inlineAttachment.messageId,
+						type: 'message-inline-attachment',
+					})
+				}
+			}
+
+			return attachments;
 		},
 		async stopComposerSession({
 			restoreOriginalSendAt = false,
@@ -2469,6 +2507,21 @@ export default function mainStoreActions() {
 			try {
 				const body = await handleHttpAuthErrors(async () => {
 					return await fetchMessageHtmlBody(id)
+				})
+				return DOMPurify.sanitize(body, {
+					FORBID_TAGS: ['style'],
+				})
+			} catch (error) {
+				if (error.response?.status === 404) {
+					showError(t('mail', 'Sorry, the message could not be loaded. The draft may no longer exist. Please refresh the page and try again.'), { timeout: TOAST_DEFAULT_TIMEOUT * 2 })
+				}
+				throw error
+			}
+		},
+		async processHtmlBodyForward(id) {
+			try {
+				const body = await handleHttpAuthErrors(async () => {
+					return await fetchMessageHtmlBodyForward(id)
 				})
 				return DOMPurify.sanitize(body, {
 					FORBID_TAGS: ['style'],

@@ -685,11 +685,11 @@ class MessageMapper {
 		foreach ($structure->partIterator() as $key => $part) {
 			/** @var Horde_Mime_Part $part */
 
-			if (!$part->isAttachment()) {
+			if (count($attachmentIds) === 0 && !$part->isAttachment()) {
 				continue;
 			}
 
-			if (!empty($attachmentIds) && !in_array($part->getMimeId(), $attachmentIds, true)) {
+			if (!in_array($part->getMimeId(), $attachmentIds, true)) {
 				// We are looking for specific parts only and this is not one of them
 				continue;
 			}

@@ -208,6 +208,18 @@ export async function fetchMessageHtmlBody(id) {
 	}
 }
 
+export async function fetchMessageHtmlBodyForward(id) {
+	const url = generateUrl('/apps/mail/api/messages/{id}/html/forward', {
+		id,
+	})
+
+	try {
+		return (await axios.get(url)).data
+	} catch (e) {
+		throw convertAxiosError(e)
+	}
+}
+
 export async function fetchMessageItineraries(id) {
 	const url = generateUrl('/apps/mail/api/messages/{id}/itineraries', {
 		id,
