@@ -387,7 +387,7 @@ class MailTransmission implements IMailTransmission {
 		}
 
 		if (count($fetchResults) < 1) {
-			throw new ServiceException('Message "' . $message->getId() . '" not found.');
+			throw new ServiceException("Message \"{$message->getId()}\" not found.");
 		}
 
 		$imapDate = $fetchResults[0]->getImapDate();
@@ -399,7 +399,7 @@ class MailTransmission implements IMailTransmission {
 		$originalRecipient = $mdnHeaders->getHeader('original-recipient');
 
 		if ($dispositionNotificationTo === null) {
-			throw new ServiceException('Message "' . $message->getId() . '" has no disposition-notification-to header.');
+			throw new ServiceException("Message \"{$message->getId()}\" has no disposition-notification-to header.");
 		}
 
 		$headers = new Horde_Mime_Headers();
@@ -431,7 +431,7 @@ class MailTransmission implements IMailTransmission {
 				]
 			);
 		} catch (Horde_Mime_Exception $e) {
-			throw new ServiceException('Unable to send mdn for message "' . $message->getId() . '" caused by: ' . $e->getMessage(), 0, $e);
+			throw new ServiceException("Unable to send mdn for message \"{$message->getId()}\" caused by: {$e->getMessage()}", 0, $e);
 		}
 	}
 

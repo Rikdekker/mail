@@ -415,7 +415,7 @@ class MailManager implements IMailManager {
 			$client->subscribeMailbox($mailbox->getName(), $subscribed);
 		} catch (Horde_Imap_Client_Exception $e) {
 			throw new ServiceException(
-				'Could not set subscription status for mailbox ' . $mailbox->getId() . ' on IMAP: ' . $e->getMessage(),
+				"Could not set subscription status for mailbox {$mailbox->getId()} on IMAP: {$e->getMessage()}",
 				$e->getCode(),
 				$e
 			);
