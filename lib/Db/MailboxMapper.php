@@ -158,6 +158,28 @@ class MailboxMapper extends QBMapper {
 	}
 
 	/**
+	 * Find the account ID for a mailbox without ownership checks.
+	 *
+	 * @throws DoesNotExistException if the mailbox does not exist
+	 */
+	public function findAccountIdForMailbox(int $mailboxId): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('account_id')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($mailboxId, IQueryBuilder::PARAM_INT)));
+
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if ($row === false) {
+			throw new DoesNotExistException("Mailbox $mailboxId does not exist");
+		}
+
+		return (int)$row['account_id'];
+	}
+
+	/**
 	 * @throws MailboxLockedException
 	 */
 	private function lockForSync(Mailbox $mailbox, string $attr, ?int $lock): int {
