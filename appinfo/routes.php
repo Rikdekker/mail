@@ -506,6 +506,26 @@ return [
 			'verb' => 'POST',
 		],
 		[
+			'name' => 'delegation#getDelegatedAccounts',
+			'url' => '/api/delegations',
+			'verb' => 'GET',
+		],
+		[
+			'name' => 'delegation#getDelegatedUsers',
+			'url' => '/api/delegations/{accountId}',
+			'verb' => 'GET',
+		],
+		[
+			'name' => 'delegation#delegate',
+			'url' => '/api/delegations/{accountId}',
+			'verb' => 'POST',
+		],
+		[
+			'name' => 'delegation#unDelegate',
+			'url' => '/api/delegations/{accountId}/{userId}',
+			'verb' => 'DELETE',
+		],
+		[
 			'name' => 'textBlockShares#getTextBlockShares',
 			'url' => '/api/textBlocks/{id}/shares',
 			'verb' => 'GET',

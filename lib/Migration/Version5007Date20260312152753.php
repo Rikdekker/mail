@@ -43,6 +43,7 @@ class Version5007Date20260312152753 extends SimpleMigrationStep {
 				'length' => 64,
 			]);
 			$table->setPrimaryKey(['id']);
+			$table->addUniqueIndex(['account_id', 'user_id'], 'mail_deleg_acc_user_uniq');
 			if ($schema->hasTable('mail_accounts')) {
 				$table->addForeignKeyConstraint(
 					$schema->getTable('mail_accounts'),

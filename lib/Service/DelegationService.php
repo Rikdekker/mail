@@ -11,39 +11,43 @@ namespace OCA\Mail\Service;
 
 use OCA\Mail\Db\Delegation;
 use OCA\Mail\Db\DelegationMapper;
+use OCA\Mail\Exception\DelegationExistsException;
 use OCP\AppFramework\Db\DoesNotExistException;
-use Psr\Log\LoggerInterface;
 
 class DelegationService {
 
 	public function __construct(
 		private DelegationMapper $delegationMapper,
-		private LoggerInterface $logger,
 	) {
 	}
 
-	public function delegate(int $accountId, string $userId): void {
+	public function delegate(int $accountId, string $userId): Delegation {
+		try {
+			$this->delegationMapper->find($accountId, $userId);
+			throw new DelegationExistsException("Delegation already exists for account $accountId and user $userId");
+		} catch (DoesNotExistException) {
+			// continue
+		}
+
 		$delegation = new Delegation();
 		$delegation->setAccountId($accountId);
 		$delegation->setUserId($userId);
-		$this->delegationMapper->insert($delegation);
+		return $this->delegationMapper->insert($delegation);
 	}
 
 	public function findDelegatedAccountForUser(string $userId): array {
 		return $this->delegationMapper->findDelegatedAccountsForUser($userId);
 	}
 
-	public function findDelegatedToUsersForAccount(string $accountId): array {
+	public function findDelegatedToUsersForAccount(int $accountId): array {
 		return $this->delegationMapper->findDelegatedToUsers($accountId);
 	}
 
+	/**
+	 * @throws DoesNotExistException
+	 */
 	public function unDelegate(int $accountId, string $userId): void {
-		try {
-			$delegation = $this->delegationMapper->find($accountId, $userId);
-		} catch (DoesNotExistException $e) {
-			$this->logger->warning("Delegation of account:$accountId not found for user: $userId", ['exception' => $e]);
-			return;
-		}
+		$delegation = $this->delegationMapper->find($accountId, $userId);
 		$this->delegationMapper->delete($delegation);
 	}
 }
