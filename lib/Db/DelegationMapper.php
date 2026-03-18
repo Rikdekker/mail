@@ -30,13 +30,11 @@ class DelegationMapper extends QBMapper {
 				$qb->expr()->eq('user_id', $qb->createNamedParameter($uid))
 			);
 
-		$rows = $this->findEntities($select);
-
-		return $rows;
+		return $this->findEntities($select);
 	}
 
-    public function findDelegatedToUsers(string $accountId) : array {
-        $qb = $this->db->getQueryBuilder();
+	public function findDelegatedToUsers(string $accountId): array {
+		$qb = $this->db->getQueryBuilder();
 
 		$select = $qb->select('user_id')
 			->from($this->getTableName())
@@ -44,14 +42,13 @@ class DelegationMapper extends QBMapper {
 				$qb->expr()->eq('account_id', $qb->createNamedParameter($accountId))
 			);
 
-		$rows = $this->findEntities($select);
-		return $rows;
-    }
+		return $this->findEntities($select);
+	}
 
-    /**
+	/**
 	 * @throws DoesNotExistException
 	 */
-	public function find(int $accountId, string $uid): Actions {
+	public function find(int $accountId, string $uid): Delegation {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())

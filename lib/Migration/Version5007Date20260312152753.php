@@ -11,6 +11,7 @@ namespace OCA\Mail\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 use Override;
@@ -41,18 +42,20 @@ class Version5007Date20260312152753 extends SimpleMigrationStep {
 				'notnull' => true,
 				'length' => 64,
 			]);
+			$table->setPrimaryKey(['id']);
+			if ($schema->hasTable('mail_accounts')) {
+				$table->addForeignKeyConstraint(
+					$schema->getTable('mail_accounts'),
+					['account_id'],
+					['id'],
+					[
+						'onDelete' => 'CASCADE',
+					]
+				);
+			}
 		}
-		$table->setPrimaryKey(['id']);
-		if ($schema->hasTable('mail_accounts')) {
-			$table->addForeignKeyConstraint(
-				$schema->getTable('mail_accounts'),
-				['account_id'],
-				['id'],
-				[
-					'onDelete' => 'CASCADE',
-				]
-			);
-		}
+
+		return $schema;
 	}
 
 }
