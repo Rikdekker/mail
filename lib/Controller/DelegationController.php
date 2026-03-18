@@ -30,7 +30,7 @@ class DelegationController extends Controller {
 		private DelegationService $delegationService,
 		private AccountService $accountService,
 		private IUserManager $userManager,
-		?string $UserId
+		?string $UserId,
 	) {
 		parent::__construct($appName, $request);
 		$this->currentUserId = $UserId;

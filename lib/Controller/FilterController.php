@@ -11,9 +11,9 @@ namespace OCA\Mail\Controller;
 
 use OCA\Mail\AppInfo\Application;
 use OCA\Mail\Service\AccountService;
+use OCA\Mail\Service\DelegationService;
 use OCA\Mail\Service\FilterService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\Route;
 use OCP\AppFramework\Http\JSONResponse;
@@ -27,6 +27,7 @@ class FilterController extends Controller {
 		string $userId,
 		private FilterService $mailFilterService,
 		private AccountService $accountService,
+		private DelegationService $delegationService,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 		$this->currentUserId = $userId;
@@ -39,11 +40,8 @@ class FilterController extends Controller {
 	#[Route(Route::TYPE_FRONTPAGE, verb: 'GET', url: '/api/filter/{accountId}', requirements: ['accountId' => '[\d]+'])]
 	#[NoAdminRequired]
 	public function getFilters(int $accountId): JSONResponse {
-		$account = $this->accountService->findById($accountId);
-
-		if ($account->getUserId() !== $this->currentUserId) {
-			return new JSONResponse([], Http::STATUS_NOT_FOUND);
-		}
+		$effectiveUserId = $this->delegationService->resolveAccountUserId($accountId, $this->currentUserId);
+		$account = $this->accountService->find($effectiveUserId, $accountId);
 
 		$result = $this->mailFilterService->parse($account->getMailAccount());
 
@@ -56,11 +54,8 @@ class FilterController extends Controller {
 	#[Route(Route::TYPE_FRONTPAGE, verb: 'PUT', url: '/api/filter/{accountId}', requirements: ['accountId' => '[\d]+'])]
 	#[NoAdminRequired]
 	public function updateFilters(int $accountId, array $filters): JSONResponse {
-		$account = $this->accountService->findById($accountId);
-
-		if ($account->getUserId() !== $this->currentUserId) {
-			return new JSONResponse([], Http::STATUS_NOT_FOUND);
-		}
+		$effectiveUserId = $this->delegationService->resolveAccountUserId($accountId, $this->currentUserId);
+		$account = $this->accountService->find($effectiveUserId, $accountId);
 
 		$this->mailFilterService->update($account->getMailAccount(), $filters);
 
