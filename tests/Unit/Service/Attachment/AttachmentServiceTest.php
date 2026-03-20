@@ -52,11 +52,9 @@ class AttachmentServiceTest extends TestCase {
 	private IURLGenerator&MockObject $urlGenerator;
 	private IMimeTypeDetector&MockObject $mimeTypeDetector;
 	private LoggerInterface&MockObject $logger;
-
+	private ITimeFactory&MockObject$timeFactory;
 	private AttachmentService $service;
 
-	/** @var ITimeFactory|MockObject */
-	private $timeFactory;
 
 	protected function setUp(): void {
 		parent::setUp();
